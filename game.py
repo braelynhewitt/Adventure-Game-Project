@@ -11,18 +11,32 @@ def main():
     # Welcome message
     gamefunctions.print_welcome(name, 40)
     
-    # Show the shop menu
-    gamefunctions.print_shop_menu("Sword", 10, "Potion", 5)
+    # Initialize character stats
+    character = {'name': name, 'hp': 30, 'gold': 10}
     
-    # Example purchase
-    can_buy, money_left = gamefunctions.purchase_item(5, 15, 2)
-    print(f"\nYou bought {can_buy} items and have ${money_left} left.\n")
-    
-    # Generate a random monster
-    monster = gamefunctions.new_random_monster()
-    print(f"A wild {monster['name']} appears!")
-    print(f"Description: {monster['description']}")
-    print(f"Health: {monster['health']}, Power: {monster['power']}, Money: {monster['money']}")
+    # Main game loop
+    while True:
+        print("\nYou are in town.")
+        print(f"Current HP: {character['hp']}, Current Gold: {character['gold']}")
+        
+        # Prompt for user action
+        choice = gamefunctions.validate_input(
+            "What would you like to do?\n"
+            "1) Leave town (Fight Monster)\n"
+            "2) Sleep (Restore HP for 5 Gold)\n"
+            "3) Quit\n",
+            ['1', '2', '3']
+        )
+        
+        if choice == '1':
+            # Fight a random Shrek-themed monster
+            character = gamefunctions.start_fight(character)
+        elif choice == '2':
+            # Sleep to restore HP for gold
+            gamefunctions.sleep(character)
+        elif choice == '3':
+            print("Thanks for playing! Goodbye!")
+            break
 
 if __name__ == "__main__":
     main()
