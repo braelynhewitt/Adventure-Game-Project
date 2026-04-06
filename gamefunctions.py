@@ -1,62 +1,46 @@
 # Braelyn Hewitt-Holbein
-# Updated Game functions
-# 3-1-26
-
-"""
-gamefunctions.py contains core functions for an adventure game.
-
-This module provides functions to print a welcome message, display a
-shop menu, purchase items, and generate random monsters.
-
-Functions:
-    print_welcome(name: str, width: int) -> None
-    print_shop_menu(item1Name: str, item1Price: float, item2Name: str, item2Price: float) -> None
-    purchase_item(item_price: int, starting_money: int, qty: int = 1) -> tuple
-    new_random_monster() -> dict
-
-Typical usage:
-    import gamefunctions
-    gamefunctions.print_welcome("Braelyn", 40)
-"""
+# Updated Game Functions - Shrek Adventure Game
+# 3-5-26
 
 import random
 
-def purchase_item(item_price, starting_money, qty=1):
-    """
-    Calculate how many items can be purchased and money left.
+# Shop items with Shrek/fairy tale theme
+shop_items = [
+    {"name": "Happily Ever After Potion", "type": "consumable", "healAmount": 20, "price": 10},
+    {"name": "Pitchforks", "type": "weapon", "maxDurability": 10, "currentDurability": 10, "equipped": False, "damage": 5, "price": 10},
+    {"name": "Rumplestiltskin Magic Contract", "type": "special", "note": "Defeat a monster instantly", "uses": 1, "price": 10}
+]
 
-    Args:
-        item_price (int): Price of a single item.
-        starting_money (int): Money available to spend.
-        qty (int, optional): Desired quantity to purchase. Defaults to 1.
+# Monsters
+monsters = [
+    {'name':'Lord Farquaad','desc':'A tiny tyrant with big ambitions.','h':(10,15),'p':(3,7),'m':(20,40)},
+    {'name':'Prince Charming','desc':'Handsome charming devil.','h':(5,12),'p':(1,4),'m':(10,25)},
+    {'name':'Dragon','desc':'A fiery dragon that loves towers and romance.','h':(15,25),'p':(5,10),'m':(30,60)},
+    {'name':'Fairy Godmother','desc':'Evil fairy that can make all your dreams come true.','h':(3,8),'p':(1,3),'m':(5,15)},
+    {'name':'Puss in Boots','desc':'A cute decieving cat with sharp claws.','h':(8,14),'p':(2,6),'m':(15,35)}
+]
 
-    Returns:
-        tuple: (number of items purchased, money left)
+def print_welcome(name, width):
+    print(f"Hello, {name}!".center(width))
+    print("Welcome to the Shrek Adventure Game!".center(width))
+    print("-"*width)
 
-    Example:
-        >>> purchase_item(5, 20, 3)
-        (3, 5)
-    """
-    can_buy = min(qty, starting_money // item_price)
-    return can_buy, starting_money - can_buy * item_price
+def validate_input(prompt, valid_options):
+    while True:
+        choice = input(prompt)
+        if choice in valid_options:
+            return choice
+        print("Invalid input. Please try again.")
 
+def sleep(state):
+    if state["player_gold"] >= 5:
+        state["player_hp"] += 10
+        state["player_gold"] -= 5
+        print(f"You slept like Sleeping Beauty and restored 10 HP! Current HP: {state['player_hp']}, Gold: {state['player_gold']}")
+    else:
+        print("Not enough gold to sleep!")
 
 def new_random_monster():
-    """
-    Generate a random Shrek-themed monster with randomized stats.
-
-    Returns:
-        dict: A dictionary containing monster details:
-            'name' (str), 'description' (str),
-            'health' (int), 'power' (int), 'money' (int)
-    """
-    monsters = [
-        {'name':'Lord Farquaad','desc':'A tiny tyrant with big ambitions.','h':(10,15),'p':(3,7),'m':(20,40)},
-        {'name':'Donkey','desc':'A talkative donkey ready to talk your ear off.','h':(5,12),'p':(1,4),'m':(10,25)},
-        {'name':'Dragon','desc':'A fiery dragon that loves treasure.','h':(15,25),'p':(5,10),'m':(30,60)},
-        {'name':'Gingerbread Man','desc':'A smart cookie with a big attitude.','h':(3,8),'p':(1,3),'m':(5,15)},
-        {'name':'Puss in Boots','desc':'A charming cat with sharp claws.','h':(8,14),'p':(2,6),'m':(15,35)},
-    ]
     m = random.choice(monsters)
     return {
         'name': m['name'],
@@ -66,116 +50,72 @@ def new_random_monster():
         'money': random.randint(*m['m'])
     }
 
-
-def print_welcome(name, width):
-    """
-    Print a welcome message centered within a given width.
-
-    Args:
-        name (str): The player's name.
-        width (int): The total width to center the message.
-
-    Returns:
-        None
-
-    Example:
-        >>> print_welcome("Braelyn", 40)
-    """
-    print(f"Hello, {name}!".center(width))
-
-
-def print_shop_menu(item1Name, item1Price, item2Name, item2Price):
-    """
-    Print a shop menu with two items and their prices.
-
-    Args:
-        item1Name (str): Name of the first item.
-        item1Price (float): Price of the first item.
-        item2Name (str): Name of the second item.
-        item2Price (float): Price of the second item.
-
-    Returns:
-        None
-
-    Example:
-        >>> print_shop_menu("Potion", 5.0, "Sword", 10.0)
-    """
-    max_name_length = max(len(item1Name), len(item2Name))
-    name_field = max(max_name_length, 12)  # minimum width for names
-    price_field = 8  # fixed width for prices
-    total_width = name_field + price_field + 4  # 4 for "| " and " |"
-    border = "/" + "-" * (total_width - 2) + "\\"
-
-    print(border)
-    print(f"| {item1Name:<{name_field}}${item1Price:>{price_field}.2f} |")
-    print(f"| {item2Name:<{name_field}}${item2Price:>{price_field}.2f} |")
-    print("\\" + "-" * (total_width - 2) + "/")
-
-def validate_input(prompt, valid_options):
-    """
-    Prompt the user until they enter a valid option from valid_options.
-    Returns the validated input as a string.
-    """
-    while True:
-        choice = input(prompt)
-        if choice in valid_options:
-            return choice
-        else:
-            print("Invalid input. Please try again.")
-
-def sleep(character):
-    """
-    Restore HP for 5 gold if the character has enough.
-    """
-    if character['gold'] >= 5:
-        character['hp'] += 10
-        character['gold'] -= 5
-        print(f"You slept like sleeping beauty and restored 10 HP. Current HP: {character['hp']}, Gold: {character['gold']}")
-    else:
-        print("Not enough gold to sleep")
-
-def start_fight(character):
-    """
-    Handles a fight with a random Shrek-themed monster.
-    Returns updated character stats.
-    """
+def start_fight(state):
     monster = new_random_monster()
-    print(f"\nA wild {monster['name']} appears!")
-    print(f"Description: {monster['description']}")
-    print(f"Health: {monster['health']}, Power: {monster['power']}, Gold Reward: {monster['money']}")
+    print(f"\nlook! {monster['name']} appears! {monster['description']}")
+    while monster['health'] > 0 and state['player_hp'] > 0:
+        print(f"\nYour HP: {state['player_hp']}, {monster['name']} HP: {monster['health']}")
+        action = validate_input("1) Attack\n2) Use Special Item\n3) Run\n", ['1','2','3'])
 
-    while character['hp'] > 0 and monster['health'] > 0:
-        print(f"\nYour HP: {character['hp']}, {monster['name']} HP: {monster['health']}")
-        action = validate_input("1) Attack\n2) Run\n", ['1','2'])
         if action == '1':
-            dmg_to_monster = random.randint(5, 10)
-            dmg_to_character = random.randint(1, monster['power'])
-            monster['health'] -= dmg_to_monster
-            character['hp'] -= dmg_to_character
-            print(f"You hit the {monster['name']} for {dmg_to_monster} damage!")
-            print(f"The {monster['name']} hits you for {dmg_to_character} damage!")
+            # Check if player has a weapon equipped
+            damage = random.randint(1,5)
+            weapon = None
+            for item in state['player_inventory']:
+                if item['type']=='weapon' and item.get('equipped', False):
+                    weapon = item
+                    damage += item['damage']
+                    item['currentDurability'] -= 1
+                    if item['currentDurability'] <= 0:
+                        print(f"Your {item['name']} broke!")
+                        state['player_inventory'].remove(item)
+                        weapon = None
+                    break
+            monster['health'] -= damage
+            dmg_taken = random.randint(1, monster['power'])
+            state['player_hp'] -= dmg_taken
+            print(f"You dealt {damage} damage to {monster['name']}!")
+            print(f"{monster['name']} dealt {dmg_taken} damage to you!")
+
         elif action == '2':
-            print("You ran away!")
-            break
+            special_used = False
+            for item in state['player_inventory']:
+                if item['type']=='special' and item['uses']>0:
+                    print(f"You used {item['name']} to defeat {monster['name']} instantly!")
+                    monster['health'] = 0
+                    item['uses'] -= 1
+                    if item['uses']==0:
+                        state['player_inventory'].remove(item)
+                    special_used = True
+                    break
+            if not special_used:
+                print("No special items available!")
 
-    if character['hp'] <= 0:
-        print("You passed out...")
-    elif monster['health'] <= 0:
-        gold_earned = monster['money']
-        character['gold'] += gold_earned
-        print(f"You defeated the {monster['name']} and earned {gold_earned} gold!")
+        elif action == '3':
+            print("You ran away safely!")
+            return state
 
-    return character
+    if state['player_hp'] <= 0:
+        print("You passed out... Game over!")
+    else:
+        print(f"You defeated {monster['name']} and earned {monster['money']} gold!")
+        state['player_gold'] += monster['money']
 
+    return state
 
-# Test all functions when this file is run directly
-def test_functions():
-    """Test all functions in the module."""
-    print_welcome("Braelyn", 50)
-    print_shop_menu("Potion", 5.0, "Sword", 10.0)
-    print(purchase_item(5, 20, 3))
-    print(new_random_monster())
-
-
-if __name__ == "__main__":
-    test_functions()
+def equip_item(state, type_filter='weapon'):
+    filtered = [item for item in state['player_inventory'] if item['type']==type_filter]
+    if not filtered:
+        print(f"No {type_filter}s to equip.")
+        return
+    print("Available items to equip:")
+    for i, item in enumerate(filtered, start=1):
+        status = "(Equipped)" if item.get('equipped', False) else ""
+        print(f"{i}) {item['name']} {status}")
+    choice = input("Enter number to equip, or '-' to cancel: ")
+    if choice.isdigit() and 1 <= int(choice) <= len(filtered):
+        for item in state['player_inventory']:
+            if item['type']==type_filter:
+                item['equipped'] = False
+        filtered[int(choice)-1]['equipped'] = True
+        print(f"{filtered[int(choice)-1]['name']} is now equipped!")
