@@ -3,6 +3,7 @@
 # 3-5-26
 
 import random
+import json
 
 # Shop items with Shrek/fairy tale theme
 shop_items = [
@@ -17,13 +18,13 @@ monsters = [
     {'name':'Prince Charming','desc':'Handsome charming devil.','h':(5,12),'p':(1,4),'m':(10,25)},
     {'name':'Dragon','desc':'A fiery dragon that loves towers and romance.','h':(15,25),'p':(5,10),'m':(30,60)},
     {'name':'Fairy Godmother','desc':'Evil fairy that can make all your dreams come true.','h':(3,8),'p':(1,3),'m':(5,15)},
-    {'name':'Puss in Boots','desc':'A cute decieving cat with sharp claws.','h':(8,14),'p':(2,6),'m':(15,35)}
+    {'name':'Puss in Boots','desc':'A cute deceiving cat with sharp claws.','h':(8,14),'p':(2,6),'m':(15,35)}
 ]
 
 def print_welcome(name, width):
     print(f"Hello, {name}!".center(width))
     print("Welcome to the Shrek Adventure Game!".center(width))
-    print("-"*width)
+    print("-" * width)
 
 def validate_input(prompt, valid_options):
     while True:
@@ -52,43 +53,52 @@ def new_random_monster():
 
 def start_fight(state):
     monster = new_random_monster()
-    print(f"\nlook! {monster['name']} appears! {monster['description']}")
+    print(f"\nLook! {monster['name']} appears! {monster['description']}")
+
     while monster['health'] > 0 and state['player_hp'] > 0:
         print(f"\nYour HP: {state['player_hp']}, {monster['name']} HP: {monster['health']}")
         action = validate_input("1) Attack\n2) Use Special Item\n3) Run\n", ['1','2','3'])
 
         if action == '1':
-            # Check if player has a weapon equipped
-            damage = random.randint(1,5)
-            weapon = None
+            damage = random.randint(1, 5)
+
             for item in state['player_inventory']:
-                if item['type']=='weapon' and item.get('equipped', False):
-                    weapon = item
+                if item['type'] == 'weapon' and item.get('equipped', False):
                     damage += item['damage']
                     item['currentDurability'] -= 1
+
                     if item['currentDurability'] <= 0:
                         print(f"Your {item['name']} broke!")
-                        state['player_inventory'].remove(item)
-                        weapon = None
+                        state['player_inventory'] = [
+                            i for i in state['player_inventory'] if i != item
+                        ]
                     break
+
             monster['health'] -= damage
             dmg_taken = random.randint(1, monster['power'])
             state['player_hp'] -= dmg_taken
+
             print(f"You dealt {damage} damage to {monster['name']}!")
             print(f"{monster['name']} dealt {dmg_taken} damage to you!")
 
         elif action == '2':
-            special_used = False
+            used = False
+
             for item in state['player_inventory']:
-                if item['type']=='special' and item['uses']>0:
+                if item['type'] == 'special' and item['uses'] > 0:
                     print(f"You used {item['name']} to defeat {monster['name']} instantly!")
                     monster['health'] = 0
                     item['uses'] -= 1
-                    if item['uses']==0:
-                        state['player_inventory'].remove(item)
-                    special_used = True
+
+                    if item['uses'] <= 0:
+                        state['player_inventory'] = [
+                            i for i in state['player_inventory'] if i != item
+                        ]
+
+                    used = True
                     break
-            if not special_used:
+
+            if not used:
                 print("No special items available!")
 
         elif action == '3':
@@ -104,18 +114,44 @@ def start_fight(state):
     return state
 
 def equip_item(state, type_filter='weapon'):
-    filtered = [item for item in state['player_inventory'] if item['type']==type_filter]
+    filtered = [item for item in state['player_inventory'] if item['type'] == type_filter]
+
     if not filtered:
         print(f"No {type_filter}s to equip.")
         return
+
     print("Available items to equip:")
     for i, item in enumerate(filtered, start=1):
         status = "(Equipped)" if item.get('equipped', False) else ""
         print(f"{i}) {item['name']} {status}")
+
     choice = input("Enter number to equip, or '-' to cancel: ")
+
     if choice.isdigit() and 1 <= int(choice) <= len(filtered):
         for item in state['player_inventory']:
-            if item['type']==type_filter:
+            if item['type'] == type_filter:
                 item['equipped'] = False
+
         filtered[int(choice)-1]['equipped'] = True
         print(f"{filtered[int(choice)-1]['name']} is now equipped!")
+
+# ---------------- SAVE / LOAD ------------------------------
+
+def save_game(filename, state):
+    """Save full game state to a JSON file."""
+    with open(filename, "w") as file:
+        json.dump(state, file, indent=4)
+
+def load_game(filename):
+    """Load full game state from a JSON file."""
+    try:
+        with open(filename, "r") as file:
+            return json.load(file)
+    except FileNotFoundError:
+        print("Save file not found. Starting new game.")
+        return {
+            "player_name": "Unknown",
+            "player_hp": 30,
+            "player_gold": 75,
+            "player_inventory": []
+        }
