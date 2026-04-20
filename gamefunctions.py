@@ -135,6 +135,72 @@ def equip_item(state, type_filter='weapon'):
         filtered[int(choice)-1]['equipped'] = True
         print(f"{filtered[int(choice)-1]['name']} is now equipped!")
 
+# ---MAP SYSTEM ---
+
+def move_player(game_state, direction):
+    x, y = game_state["map"]["player"]
+
+    if direction == "up":
+        y -= 1
+    elif direction == "down":
+        y += 1
+    elif direction == "left":
+        x -= 1
+    elif direction == "right":
+        x += 1
+
+    x = max(0, min(9, x))
+    y = max(0, min(9, y))
+
+    old = game_state["map"]["player"]
+    game_state["map"]["player"] = [x, y]
+
+    if game_state["map"]["player"] == game_state["map"]["monster"]:
+        return "monster"
+
+    if game_state["map"]["town"] == game_state["map"]["player"] and old != game_state["map"]["town"]:
+        return "town"
+
+    return "moved"
+
+def draw_map(state):
+    for y in range(10):
+        row = ""
+        for x in range(10):
+            if [x, y] == state["map"]["player"]:
+                row += "P"
+            elif [x, y] == state["map"]["town"]:
+                row += "T"
+            elif [x, y] == state["map"]["monster"]:
+                row += "M"
+            else:
+                row += "."
+        print(row)
+    print()
+
+
+def explore(state):
+    while True:
+        draw_map(state)
+
+        move = input("Move (w/a/s/d or q): ")
+
+        if move == "w":
+            result = move_player(state, "up")
+        elif move == "s":                
+            result = move_player(state, "down")
+        elif move == "a":
+            result = move_player(state, "left")
+        elif move == "d":
+            result = move_player(state, "right")            
+        elif move == "q":
+            return "town"
+
+        if result == "monster":
+            return "monster"
+        if result == "town":
+            return "town"
+
 # ---------------- SAVE / LOAD ------------------------------
 
 def save_game(filename, state):

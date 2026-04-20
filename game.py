@@ -21,7 +21,12 @@ def main():
             "player_name": name,
             "player_hp": 30,
             "player_gold": 75,
-            "player_inventory": []
+            "player_inventory": [],
+            "map": {
+                "player": [0, 0],
+                "town": [2, 2],
+                "monster": [7, 7]
+            }
         }
 
     # ✅ GAME LOOP MUST RUN FOR BOTH NEW AND LOADED GAMES
@@ -29,8 +34,8 @@ def main():
         print(f"\nHP: {state['player_hp']}, Gold: {state['player_gold']}")
 
         choice = gamefunctions.validate_input(
-            "1) Fight Monster\n2) Sleep (5 gold)\n3) Visit Shop\n4) Equip Weapon\n5) Save and Quit\n6) Quit Without Saving\n",
-            ['1','2','3','4','5','6']
+            "1) Fight Monster\n2) Sleep (5 gold)\n3) Visit Shop\n4) Equip Weapon\n5) Save and Quit\n6) Quit Without Saving\n7) Explore Map\n",
+            ['1','2','3','4','5','6','7']
         )
 
         if choice == '1':
@@ -75,6 +80,13 @@ def main():
         elif choice == '6':
             print("Thanks for playing! Goodbye!")
             break
+        elif choice == '7':
+            result = gamefunctions.explore(state)
+
+            if result == "monster":
+                state = gamefunctions.start_fight(state)
+            elif result == "town":
+                print("Returned to town.")
 
 
 if __name__ == "__main__":
