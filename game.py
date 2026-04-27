@@ -3,6 +3,7 @@
 # 3-5-26
 
 import gamefunctions
+from WanderingMonster import WanderingMonster
 
 def main():
 
@@ -25,9 +26,21 @@ def main():
             "map": {
                 "player": [0, 0],
                 "town": [2, 2],
-                "monster": [7, 7]
-            }
+            },
+            "monsters":[]
         }
+
+        monster = WanderingMonster.random_spawn(
+            occupied=[],
+            forbidden=[
+                tuple(state["map"]["player"]),
+                tuple(state["map"]["town"])
+            ],
+            grid_w=10,
+            grid_h=10
+        )
+
+        state["monsters"].append(monster)
 
     # ✅ GAME LOOP MUST RUN FOR BOTH NEW AND LOADED GAMES
     while True:
@@ -80,12 +93,21 @@ def main():
         elif choice == '6':
             print("Thanks for playing! Goodbye!")
             break
+        
         elif choice == '7':
             result = gamefunctions.explore(state)
 
+            # 1. combat FIRST
             if result == "monster":
                 state = gamefunctions.start_fight(state)
-            elif result == "town":
+
+            # 2. THEN move monsters
+            gamefunctions.move_monsters(state)
+
+            # 3. THEN update/spawn monsters
+            gamefunctions.update_monsters(state)
+
+            if result == "town":
                 print("Returned to town.")
 
 

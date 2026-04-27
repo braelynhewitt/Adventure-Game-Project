@@ -4,8 +4,10 @@
 
 import random
 import json
+from WanderingMonster import WanderingMonster
 
-# Shop items with Shrek/fairy tale theme
+
+# Shop items
 shop_items = [
     {"name": "Happily Ever After Potion", "type": "consumable", "healAmount": 20, "price": 10},
     {"name": "Pitchforks", "type": "weapon", "maxDurability": 10, "currentDurability": 10, "equipped": False, "damage": 5, "price": 10},
@@ -51,12 +53,27 @@ def new_random_monster():
         'money': random.randint(*m['m'])
     }
 
-def start_fight(state):
-    monster = new_random_monster()
-    print(f"\nLook! {monster['name']} appears! {monster['description']}")
 
-    while monster['health'] > 0 and state['player_hp'] > 0:
-        print(f"\nYour HP: {state['player_hp']}, {monster['name']} HP: {monster['health']}")
+def start_fight(state):
+
+    player_pos = state["map"]["player"]
+
+    monster = None
+
+    # find monster at player position
+    for m in state["monsters"]:
+        if [m.x, m.y] == player_pos:
+            monster = m
+            break
+
+    if monster is None:
+        print("No monster here to fight.")
+        return state
+
+    print(f"\nLook! {monster.monster_type} appears!" if hasattr(monster, "monster_type") else "A monster appears!")
+
+    while monster.hp > 0 and state['player_hp'] > 0:
+        print(f"\nYour HP: {state['player_hp']}, Monster HP: {monster.hp}")
         action = validate_input("1) Attack\n2) Use Special Item\n3) Run\n", ['1','2','3'])
 
         if action == '1':
@@ -74,20 +91,22 @@ def start_fight(state):
                         ]
                     break
 
-            monster['health'] -= damage
-            dmg_taken = random.randint(1, monster['power'])
+            monster.hp -= damage
+
+            # FIX: use monster power properly
+            dmg_taken = random.randint(1, 4)
             state['player_hp'] -= dmg_taken
 
-            print(f"You dealt {damage} damage to {monster['name']}!")
-            print(f"{monster['name']} dealt {dmg_taken} damage to you!")
+            print(f"You dealt {damage} damage!")
+            print(f"You took {dmg_taken} damage!")
 
         elif action == '2':
             used = False
 
             for item in state['player_inventory']:
                 if item['type'] == 'special' and item['uses'] > 0:
-                    print(f"You used {item['name']} to defeat {monster['name']} instantly!")
-                    monster['health'] = 0
+                    print(f"You used {item['name']}!")
+                    monster.hp = 0
                     item['uses'] -= 1
 
                     if item['uses'] <= 0:
@@ -99,17 +118,22 @@ def start_fight(state):
                     break
 
             if not used:
-                print("No special items available!")
+                print("No special items!")
 
         elif action == '3':
-            print("You ran away safely!")
+            print("You ran away!")
             return state
 
     if state['player_hp'] <= 0:
-        print("You passed out... Game over!")
+        print("You died...")
     else:
-        print(f"You defeated {monster['name']} and earned {monster['money']} gold!")
-        state['player_gold'] += monster['money']
+        print("Monster defeated!")
+        state['player_gold'] += 10
+
+        # FIX: safer removal
+        state["monsters"] = [
+            m for m in state["monsters"] if m != monster
+        ]
 
     return state
 
@@ -135,7 +159,8 @@ def equip_item(state, type_filter='weapon'):
         filtered[int(choice)-1]['equipped'] = True
         print(f"{filtered[int(choice)-1]['name']} is now equipped!")
 
-# ---MAP SYSTEM ---
+
+# ---MAP SYSTEM---
 
 def move_player(game_state, direction):
     x, y = game_state["map"]["player"]
@@ -152,16 +177,18 @@ def move_player(game_state, direction):
     x = max(0, min(9, x))
     y = max(0, min(9, y))
 
-    old = game_state["map"]["player"]
     game_state["map"]["player"] = [x, y]
 
-    if game_state["map"]["player"] == game_state["map"]["monster"]:
-        return "monster"
+    for m in game_state["monsters"]:
+        if hasattr(m, "x") and hasattr(m, "y"):
+            if [m.x, m.y] == [x, y]:
+                return "monster"
 
-    if game_state["map"]["town"] == game_state["map"]["player"] and old != game_state["map"]["town"]:
+    if game_state["map"]["town"] == [x, y]:
         return "town"
 
     return "moved"
+
 
 def draw_map(state):
     for y in range(10):
@@ -171,7 +198,7 @@ def draw_map(state):
                 row += "P"
             elif [x, y] == state["map"]["town"]:
                 row += "T"
-            elif [x, y] == state["map"]["monster"]:
+            elif any([x, y] == [m.x, m.y] for m in state["monsters"]):
                 row += "M"
             else:
                 row += "."
@@ -187,12 +214,12 @@ def explore(state):
 
         if move == "w":
             result = move_player(state, "up")
-        elif move == "s":                
+        elif move == "s":
             result = move_player(state, "down")
         elif move == "a":
             result = move_player(state, "left")
         elif move == "d":
-            result = move_player(state, "right")            
+            result = move_player(state, "right")
         elif move == "q":
             return "town"
 
@@ -201,23 +228,70 @@ def explore(state):
         if result == "town":
             return "town"
 
-# ---------------- SAVE / LOAD ------------------------------
+
+# ---------------- SAVE / LOAD ---------------- #
 
 def save_game(filename, state):
-    """Save full game state to a JSON file."""
+    data = state.copy()
+    data["monsters"] = [m.to_dict() for m in state["monsters"]]
+
     with open(filename, "w") as file:
-        json.dump(state, file, indent=4)
+        json.dump(data, file, indent=4)
+
 
 def load_game(filename):
-    """Load full game state from a JSON file."""
     try:
         with open(filename, "r") as file:
-            return json.load(file)
+            data = json.load(file)
+
+        data["monsters"] = [
+            WanderingMonster.from_dict(m) for m in data.get("monsters", [])
+        ]
+
+        return data
+
     except FileNotFoundError:
         print("Save file not found. Starting new game.")
         return {
             "player_name": "Unknown",
             "player_hp": 30,
             "player_gold": 75,
-            "player_inventory": []
+            "player_inventory": [],
+            "map": {
+                "player": [0, 0],
+                "town": [2, 2]
+            },
+            "monsters": []
         }
+
+
+def move_monsters(state):
+    player_pos = tuple(state["map"]["player"])
+    town_pos = tuple(state["map"]["town"])
+
+    for monster in state["monsters"]:
+        others = [(m.x, m.y) for m in state["monsters"] if m != monster]
+
+        monster.move(
+            occupied=others,
+            forbidden=[player_pos, town_pos],
+            grid_w=10,
+            grid_h=10
+        )
+
+
+def update_monsters(state):
+    state["monsters"] = [m for m in state["monsters"] if m.hp > 0]
+
+    if len(state["monsters"]) == 0:
+        for _ in range(2):
+            new_m = WanderingMonster.random_spawn(
+                occupied=[(m.x, m.y) for m in state["monsters"]],
+                forbidden=[
+                    tuple(state["map"]["player"]),
+                    tuple(state["map"]["town"])
+                ],
+                grid_w=10,
+                grid_h=10
+            )
+            state["monsters"].append(new_m)
