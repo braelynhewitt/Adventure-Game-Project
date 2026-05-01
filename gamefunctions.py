@@ -58,24 +58,37 @@ def start_fight(state):
         action = validate_input("1) Attack\n2) Use Special Item\n3) Run\n", ['1','2','3'])
 
         if action == '1':
-            # Check if player has a weapon equipped
-            damage = random.randint(1,5)
+            print("\n--- YOUR TURN ---")
+
+            damage = random.randint(1, 5)
+
             weapon = None
             for item in state['player_inventory']:
-                if item['type']=='weapon' and item.get('equipped', False):
+                if item['type'] == 'weapon' and item.get('equipped', False):
                     weapon = item
                     damage += item['damage']
                     item['currentDurability'] -= 1
+
+                    print(f"You attack with {item['name']}!")
+
                     if item['currentDurability'] <= 0:
                         print(f"Your {item['name']} broke!")
                         state['player_inventory'].remove(item)
-                        weapon = None
                     break
+
             monster['health'] -= damage
+            print(f"You dealt {damage} damage to {monster['name']}!")
+
+            if monster['health'] <= 0:
+                print(f"{monster['name']} has been defeated!")
+                break
+
+            print("\n--- MONSTER TURN ---")
             dmg_taken = random.randint(1, monster['power'])
             state['player_hp'] -= dmg_taken
-            print(f"You dealt {damage} damage to {monster['name']}!")
-            print(f"{monster['name']} dealt {dmg_taken} damage to you!")
+            print(f"{monster['name']} hits you for {dmg_taken} damage!")
+
+            print(f"HP -> You: {state['player_hp']} | Monster: {monster['health']}")
 
         elif action == '2':
             special_used = False
