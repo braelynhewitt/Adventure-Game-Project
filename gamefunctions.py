@@ -50,9 +50,17 @@ def new_random_monster():
         'money': random.randint(*m['m'])
     }
 
-def start_fight(state):
-    monster = new_random_monster()
+def start_fight(state, monster_obj):
+    monster = {
+        'name': monster_obj.monster_type,
+        'description': "",
+        'health': monster_obj.hp,
+        'power': 5,
+        'money': 20
+    }
+    
     print(f"\nlook! {monster['name']} appears! {monster['description']}")
+    
     while monster['health'] > 0 and state['player_hp'] > 0:
         print(f"\nYour HP: {state['player_hp']}, {monster['name']} HP: {monster['health']}")
         action = validate_input("1) Attack\n2) Use Special Item\n3) Run\n", ['1','2','3'])
@@ -80,8 +88,8 @@ def start_fight(state):
             print(f"You dealt {damage} damage to {monster['name']}!")
 
             if monster['health'] <= 0:
-                print(f"{monster['name']} has been defeated!")
-                break
+                print(f"You defeated {monster['name']} and earned {monster['money']} gold!")
+                state['player_gold'] += monster['money']
 
             print("\n--- MONSTER TURN ---")
             dmg_taken = random.randint(1, monster['power'])
@@ -114,6 +122,8 @@ def start_fight(state):
         print(f"You defeated {monster['name']} and earned {monster['money']} gold!")
         state['player_gold'] += monster['money']
 
+        monster_obj.hp = monster['health']
+
     return state
 
 def equip_item(state, type_filter='weapon'):
@@ -132,3 +142,78 @@ def equip_item(state, type_filter='weapon'):
                 item['equipped'] = False
         filtered[int(choice)-1]['equipped'] = True
         print(f"{filtered[int(choice)-1]['name']} is now equipped!")
+
+def move_player(state, direction):
+    x, y = state["player_pos"]
+
+    if direction == "up":
+        y -= 1
+    elif direction == "down":
+        y += 1
+    elif direction == "left":
+        x -= 1
+    elif direction == "right":
+        x += 1
+
+    # boundary check
+    if not (0 <= x < 10 and 0 <= y < 10):
+        return "blocked"
+
+    state["player_pos"] = (x, y)
+
+    if state["player_pos"] == state["town_pos"]:
+        return "town"
+
+    for m in state["monsters"]:
+        if (m.x, m.y) == state["player_pos"]:
+            return "monster"
+
+    return "moved"
+
+def run_map(state):
+    while True:
+        print_map(state)
+
+        move = input("Move (w/a/s/d): ")
+
+        directions = {
+            "w": "up",
+            "s": "down",
+            "a": "left",
+            "d": "right"
+        }
+
+        if move not in directions:
+            continue
+
+        result = move_player(state, directions[move])
+
+        # monster movement always happens after player move
+        for monster in state["monsters"]:
+            occupied = [(m.x, m.y) for m in state["monsters"]]
+            forbidden = [state["player_pos"], state["town_pos"]]
+            monster.move(occupied, forbidden, 10, 10)
+
+        if result == "monster":
+            return "monster_encounter"
+
+        if result == "town":
+            return "returned_to_town"
+
+        # optional but correct for spec clarity
+        return "moved"
+
+def print_map(state):
+    for y in range(10):
+        row = ""
+        for x in range(10):
+
+            if (x, y) == state["player_pos"]:
+                row += "P"
+            elif (x, y) == state["town_pos"]:
+                row += "T"
+            elif any(m.x == x and m.y == y for m in state["monsters"]):
+                row += "M"
+            else:
+                row += "."
+        print(row)
